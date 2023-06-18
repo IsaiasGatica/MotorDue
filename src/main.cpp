@@ -1,5 +1,8 @@
 #include <Arduino.h>
 #include <Adafruit_INA219.h>
+#include <TaskScheduler.h>
+
+Scheduler SchedulerA;
 
 Adafruit_INA219 ina219;
 
@@ -14,10 +17,23 @@ void Encoder()
 {
   encoderCount++;
 }
+void EncoderSend()
+{
+  buffer[0] = 'E';
+  buffer[1] = encoderCount >> 8;
+  buffer[2] = encoderCount & 0x00FF;
+  buffer[3] = '\n';
+
+  Serial.write(buffer, 4);
+}
+
+Task EncoderTask(5, TASK_FOREVER, &EncoderSend);
 
 void setup(void)
 {
   Serial.begin(250000);
+  SchedulerA.addTask(EncoderTask);
+  EncoderTask.enable();
 
   // Iniciar el INA219
   // if (!ina219.begin())
@@ -48,7 +64,9 @@ void setup(void)
 
 void loop(void)
 {
-  float rpm;
+  SchedulerA.execute();
+
+  // float rpm;
   // float shuntvoltage = 0;
   // float busvoltage = 0;
   // float current_mA = 0;
@@ -86,24 +104,18 @@ void loop(void)
   digitalWrite(4, LOW);
   analogWrite(2, vel); // 0 a 4095
 
-  if (millis() - timeold >= 5)
-  {
-    // __disable_irq();
+  // if (millis() - timeold >= 5)
+  // {
+  //   // __disable_irq();
 
-    // rpm = float((60.0 * 1000.0 / 64.0) / (millis() - timeold) * encoderCount);
+  //   // rpm = float((60.0 * 1000.0 / 64.0) / (millis() - timeold) * encoderCount);
 
-    timeold = millis();
-    // encoderCount = 0;
+  //   timeold = millis();
+  //   // encoderCount = 0;
 
-    // __enable_irq();
+  //   // __enable_irq();
 
-    // Serial.println(rpm);
+  //   // Serial.println(rpm);
 
-    buffer[0] = 'E';
-    buffer[1] = encoderCount >> 8;
-    buffer[2] = encoderCount & 0x00FF;
-    buffer[3] = '\n';
-
-    Serial.write(buffer, 4);
-  }
+    // }
 }
