@@ -7,37 +7,45 @@ Adafruit_INA219 ina219;
 
 int vel = 2000;
 
-float current_mA = 0;
 float BusVoltage = 0;
-
-u_int16_t encoderCount = 0;
-byte buffer[8];
 
 typedef union
 {
-  float currentf;
-  uint8_t currentb[4];
-} currentbf;
+  float cfloat;
+  uint8_t cbytes[4];
+} current;
 
-currentbf currentmA;
+typedef union
+{
+  float efloat;
+  uint8_t ebytes[4];
+} encoderpulsos;
+
+current currentmA;
+
+encoderpulsos encoderCount;
 
 void Encoder()
 {
-  encoderCount++;
+  encoderCount.efloat++;
 }
+
 void EncoderSend()
 {
 
-  buffer[0] = 'S';
-  buffer[1] = (encoderCount >> 8) & 0xFF;
-  buffer[2] = (encoderCount & 0xFF);
-  buffer[3] = currentmA.currentb[0];
-  buffer[4] = currentmA.currentb[1];
-  buffer[5] = currentmA.currentb[2];
-  buffer[6] = currentmA.currentb[3];
-  buffer[7] = '\n';
+  Serial.write('S');
 
-  Serial.write(buffer, 8);
+  for (int i = 0; i < 4; i++)
+  {
+    Serial.write(encoderCount.ebytes[i]);
+  }
+
+  for (int i = 0; i < 4; i++)
+  {
+    Serial.write(currentmA.cbytes[i]);
+  }
+
+  Serial.write('\n');
 }
 
 Task EncoderTask(5, TASK_FOREVER, &EncoderSend);
@@ -47,6 +55,8 @@ void setup(void)
   Serial.begin(115200);
   SchedulerA.addTask(EncoderTask);
   EncoderTask.enable();
+
+  encoderCount.efloat = 0;
 
   // Iniciar el INA219
   if (!ina219.begin())
@@ -78,17 +88,8 @@ void loop(void)
   // Obtener mediciones
   // shunt = ina219.getShuntVoltage_mV();
   // BusVoltage = ina219.getBusVoltage_V();
-  currentmA.currentf = 85.20;
+  currentmA.cfloat = ina219.getCurrent_mA();
   // ina219.getCurrent_mA();
-
-  // power_mW = ina219.getPower_mW();
-  // loadvoltage = busvoltage + (shuntvoltage / 1000);
-
-  // Mostrar mediciones
-  // Serial.print(BusVoltage);
-  // Serial.println(" V");
-  // Serial.print(currentmA.currentf);
-  // Serial.println(" mA");
 
   // delay(2000);
 
