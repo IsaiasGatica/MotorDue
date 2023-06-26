@@ -11,7 +11,15 @@ float current_mA = 0;
 float BusVoltage = 0;
 
 u_int16_t encoderCount = 0;
-byte buffer[4];
+byte buffer[8];
+
+typedef union
+{
+  float currentf;
+  uint8_t currentb[4];
+} currentbf;
+
+currentbf currentmA;
 
 void Encoder()
 {
@@ -19,12 +27,17 @@ void Encoder()
 }
 void EncoderSend()
 {
+
   buffer[0] = 'S';
   buffer[1] = (encoderCount >> 8) & 0xFF;
   buffer[2] = (encoderCount & 0xFF);
-  buffer[3] = '\n';
+  buffer[3] = currentmA.currentb[0];
+  buffer[4] = currentmA.currentb[1];
+  buffer[5] = currentmA.currentb[2];
+  buffer[6] = currentmA.currentb[3];
+  buffer[7] = '\n';
 
-  // Serial.write(buffer, 4);
+  Serial.write(buffer, 8);
 }
 
 Task EncoderTask(5, TASK_FOREVER, &EncoderSend);
@@ -60,22 +73,24 @@ void setup(void)
 
 void loop(void)
 {
-  // SchedulerA.execute();
+  SchedulerA.execute();
 
   // Obtener mediciones
   // shunt = ina219.getShuntVoltage_mV();
-  BusVoltage = ina219.getBusVoltage_V();
-  current_mA = ina219.getCurrent_mA();
+  // BusVoltage = ina219.getBusVoltage_V();
+  currentmA.currentf = 85.20;
+  // ina219.getCurrent_mA();
+
   // power_mW = ina219.getPower_mW();
   // loadvoltage = busvoltage + (shuntvoltage / 1000);
 
   // Mostrar mediciones
-  Serial.print(BusVoltage);
-  Serial.println(" V");
-  Serial.print(current_mA);
-  Serial.println(" mA");
+  // Serial.print(BusVoltage);
+  // Serial.println(" V");
+  // Serial.print(currentmA.currentf);
+  // Serial.println(" mA");
 
-  delay(2000);
+  // delay(2000);
 
   digitalWrite(3, HIGH);
   digitalWrite(4, LOW);
